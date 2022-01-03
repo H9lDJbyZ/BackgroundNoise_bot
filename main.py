@@ -33,16 +33,24 @@ def load_noises():
 
 
 def amix(voice, noise):
-    in_voice = ffmpeg.input(f'{data_path}/{voice}')
+    in_voice = ffmpeg.input(f'{data_path}/{voice}', )
+
     noise_filename = f'{noise_path}/{noises_dict[noise]}'
     if not os.path.exists(noise_filename):
         return 'oops'
+
+    # in_noise = (
+    #     ffmpeg
+    #     .input(noise_filename, stream_loop=-1)
+    #     .filter('a', volume=0.5)
+    # )
     in_noise = ffmpeg.input(noise_filename, stream_loop=-1)
+
     out = f'{data_path}/out_{noise}_{str(uuid.uuid4())}.opus'
     (
         ffmpeg
         .filter((in_voice, in_noise), "amix", inputs=2, duration="first", dropout_transition=1, normalize=0)
-        .output(out, audio_bitrate="128k", format="opus")
+        .output(out, audio_bitrate="64k", format="opus")
         .overwrite_output()
         .run()
     )
