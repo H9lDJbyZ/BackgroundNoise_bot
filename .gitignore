@@ -3,3 +3,4 @@ venv\
 .env
 readme.txt
 test.py
+analytic.dat

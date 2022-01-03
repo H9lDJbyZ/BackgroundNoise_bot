@@ -6,6 +6,8 @@ import requests
 import telebot
 from telebot import types
 import uuid
+import pickle
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -18,18 +20,50 @@ else:
 
 data_path = "./data"
 noise_path = "./noise"
+analytic_file = "./analytic.dat"
 voices_dict = {}
 noises_dict = {}
+analytic_dict = {}
 bot = telebot.TeleBot(TOKEN)
 
 
 def load_noises():
-    pass
     file = open(f'{noise_path}/noise.dat', 'r')
     for line in file:
         listedline = line.strip().split('=')  # split around the = sign
         if len(listedline) > 1:  # we have the = sign in there
             noises_dict[listedline[0]] = listedline[1]
+    file.close()
+
+
+def add_analytic(noise):
+    read_analytic()
+    if noise in analytic_dict:
+        i = int(analytic_dict[noise])
+        i += 1
+        analytic_dict[noise] = i
+    else:
+        analytic_dict[noise] = 1
+    # with open(analytic_file, 'wb') as f:
+    #     pickle.dump(analytic_dict, f)
+    file = open(analytic_file, "w")
+    for line in analytic_dict:
+        file.write(f'{line}={analytic_dict[line]}\n')
+    file.close()
+
+
+def read_analytic():
+    if os.path.exists(analytic_file):
+        # file = open(analytic_file, 'rb')
+        # analytic_dict = pickle.load(file)
+        # file.close()
+        file = open(analytic_file, 'r')
+        for line in file:
+            listedline = line.strip().split('=')  # split around the = sign
+            if len(listedline) > 1:  # we have the = sign in there
+                analytic_dict[listedline[0]] = listedline[1]
+        file.close()
+
 
 
 def amix(voice, noise):
@@ -64,11 +98,6 @@ def add_background(message):
     markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
     for n in noises_dict:
         markup.add(n)
-    # itembtn1 = types.KeyboardButton('heli ')
-    # itembtn2 = types.KeyboardButton('bird')
-    # itembtn3 = types.KeyboardButton('radio')
-    # # itembtn4 = types.KeyboardButton('exit')
-    # markup.add(itembtn1, itembtn2, itembtn3)
     bot.send_message(chat_id, "Choose background:", reply_markup=markup)
     bot.register_next_step_handler(message, process_select_noise)
 
@@ -80,6 +109,8 @@ def process_select_noise(message):
     bot.send_message(chat_id, 'wait...', reply_markup=markup)
 
     noise = message.text
+    add_analytic(noise)
+
     voice_id = voices_dict[chat_id]
     file_info = bot.get_file(voice_id)
     in_filename = f'{voice_id}.opus'
@@ -110,11 +141,18 @@ def pong(message):
     bot.reply_to(message, f'pong from {WHERE}')
 
 
+@bot.message_handler(commands=['a'])
+def a(message):
+    read_analytic()
+    bot.reply_to(message, str(analytic_dict))
+
+
 if __name__ == "__main__":
     load_noises()
+    read_analytic()
     # for n in noises_dict:
     #     print(n)
-    # print(noises_dict)
+    print(analytic_dict)
 
     if not os.path.exists(data_path):
         os.mkdir(data_path)
