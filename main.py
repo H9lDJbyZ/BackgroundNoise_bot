@@ -10,6 +10,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 TOKEN = os.getenv('TOKEN')
+WHERE = os.getenv('WHERE')
+
 data_path = "./data"
 noise_path = "./noise"
 voices_dict = {}
@@ -73,7 +75,7 @@ def start(message):
 
 @bot.message_handler(commands=['ping'])
 def pong(message):
-    bot.reply_to(message, "pong")
+    bot.reply_to(message, f'pong from {WHERE}')
 
 
 if __name__ == "__main__":
