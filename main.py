@@ -54,10 +54,15 @@ def process_select_noise(message):
     file = open(in_fullfilename, "wb")
     file.write(requests.get(f'https://api.telegram.org/file/bot{TOKEN}/{file_info.file_path}').content)
     file.close()
-    voice = open(amix(in_filename, noise), 'rb')
+    out_fullfilename = amix(in_filename, noise)
+    voice = open(out_fullfilename, 'rb')
     bot.send_voice(chat_id, voice)
+    voice.close()
     markup = types.ReplyKeyboardRemove(selective=False)
     bot.send_message(chat_id, 'Done.', reply_markup=markup)
+
+    os.remove(in_fullfilename)
+    os.remove(out_fullfilename)
 
 
 @bot.message_handler(commands=['start'])
@@ -72,6 +77,16 @@ def pong(message):
 
 
 if __name__ == "__main__":
+    for filename in os.listdir(data_path):
+        file_path = os.path.join(data_path, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.remove(file_path)
+            # elif os.path.isdir(file_path):
+            #     shutil.rmtree(file_path)
+        except Exception as e:
+            print('Failed to delete %s. Reason: %s' % (file_path, e))
+
     bot.enable_save_next_step_handlers(delay=2)
     bot.load_next_step_handlers()
     bot.infinity_polling()
