@@ -9,8 +9,12 @@ import uuid
 from dotenv import load_dotenv
 load_dotenv()
 
-TOKEN = os.getenv('TOKEN')
 WHERE = os.getenv('WHERE')
+if WHERE == 'local':
+    TOKEN = os.getenv('DEV_TOKEN')
+else:
+    TOKEN = os.getenv('TOKEN')
+
 
 data_path = "./data"
 noise_path = "./noise"
