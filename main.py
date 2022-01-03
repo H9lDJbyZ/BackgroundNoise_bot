@@ -19,12 +19,25 @@ else:
 data_path = "./data"
 noise_path = "./noise"
 voices_dict = {}
+noises_dict = {}
 bot = telebot.TeleBot(TOKEN)
+
+
+def load_noises():
+    pass
+    file = open(f'{noise_path}/noise.dat', 'r')
+    for line in file:
+        listedline = line.strip().split('=')  # split around the = sign
+        if len(listedline) > 1:  # we have the = sign in there
+            noises_dict[listedline[0]] = listedline[1]
 
 
 def amix(voice, noise):
     in_voice = ffmpeg.input(f'{data_path}/{voice}')
-    in_noise = ffmpeg.input(f'{noise_path}/{noise}.opus', stream_loop=-1)
+    noise_filename = f'{noise_path}/{noises_dict[noise]}'
+    if not os.path.exists(noise_filename):
+        return 'oops'
+    in_noise = ffmpeg.input(noise_filename, stream_loop=-1)
     out = f'{data_path}/out_{noise}_{str(uuid.uuid4())}.opus'
     (
         ffmpeg
@@ -41,17 +54,23 @@ def add_background(message):
     chat_id = message.chat.id
     voices_dict[chat_id] = message.voice.file_id
     markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
-    itembtn1 = types.KeyboardButton('heli ')
-    itembtn2 = types.KeyboardButton('bird')
-    itembtn3 = types.KeyboardButton('radio')
-    # itembtn4 = types.KeyboardButton('exit')
-    markup.add(itembtn1, itembtn2, itembtn3)
+    for n in noises_dict:
+        markup.add(n)
+    # itembtn1 = types.KeyboardButton('heli ')
+    # itembtn2 = types.KeyboardButton('bird')
+    # itembtn3 = types.KeyboardButton('radio')
+    # # itembtn4 = types.KeyboardButton('exit')
+    # markup.add(itembtn1, itembtn2, itembtn3)
     bot.send_message(chat_id, "Choose background:", reply_markup=markup)
     bot.register_next_step_handler(message, process_select_noise)
 
 
 def process_select_noise(message):
     chat_id = message.chat.id
+
+    markup = types.ReplyKeyboardRemove(selective=False)
+    bot.send_message(chat_id, 'wait...', reply_markup=markup)
+
     noise = message.text
     voice_id = voices_dict[chat_id]
     file_info = bot.get_file(voice_id)
@@ -61,11 +80,12 @@ def process_select_noise(message):
     file.write(requests.get(f'https://api.telegram.org/file/bot{TOKEN}/{file_info.file_path}').content)
     file.close()
     out_fullfilename = amix(in_filename, noise)
+    if out_fullfilename == 'oops':
+        bot.send_message(chat_id, 'oops')
+        return
     voice = open(out_fullfilename, 'rb')
     bot.send_voice(chat_id, voice)
     voice.close()
-    markup = types.ReplyKeyboardRemove(selective=False)
-    bot.send_message(chat_id, 'Done.', reply_markup=markup)
 
     os.remove(in_fullfilename)
     os.remove(out_fullfilename)
@@ -83,6 +103,11 @@ def pong(message):
 
 
 if __name__ == "__main__":
+    load_noises()
+    # for n in noises_dict:
+    #     print(n)
+    # print(noises_dict)
+
     if not os.path.exists(data_path):
         os.mkdir(data_path)
     for filename in os.listdir(data_path):
