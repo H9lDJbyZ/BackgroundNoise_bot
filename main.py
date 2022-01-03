@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-import os
 
+import os
 import ffmpeg
 import requests
 import telebot
 from telebot import types
 import uuid
-# from dotenv import load_dotenv
-# load_dotenv()
+from dotenv import load_dotenv
+load_dotenv()
 
 TOKEN = os.getenv('TOKEN')
 data_path = "./data"
