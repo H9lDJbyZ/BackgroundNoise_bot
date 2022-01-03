@@ -77,6 +77,8 @@ def pong(message):
 
 
 if __name__ == "__main__":
+    if not os.path.exists(data_path):
+        os.mkdir(data_path)
     for filename in os.listdir(data_path):
         file_path = os.path.join(data_path, filename)
         try:
